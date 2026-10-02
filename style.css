@@ -19,16 +19,21 @@ body {
 .container {
   background: #ffffff;
   width: 100%;
-  max-width: 550px;
+  max-width: 680px;
   border-radius: 16px;
   padding: 30px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 }
 
-/* Header */
+/* Header - Eye-catching gradient title */
 header h1 {
-  font-size: 26px;
-  color: #2d3748;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #4f46e5, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin-bottom: 6px;
 }
 
@@ -38,24 +43,128 @@ header h1 {
   margin-bottom: 24px;
 }
 
-/* Input & Add Button */
+/* Form Group Layout with Headings/Labels Above Each Box */
 .input-section {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
   margin-bottom: 24px;
 }
 
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.form-group.habit-name-group {
+  flex: 2;
+  min-width: 180px;
+}
+
+.form-group.category-group {
+  flex: 1.2;
+  min-width: 140px;
+}
+
+.form-group.days-group {
+  width: 90px;
+}
+
+.form-group.date-group {
+  flex: 1.2;
+  min-width: 130px;
+}
+
+.form-group.btn-group {
+  display: flex;
+  align-items: flex-end;
+}
+
+/* Form Inputs Styling */
 #habit-input {
-  flex: 1;
-  padding: 12px 16px;
+  width: 100%;
+  padding: 12px 14px;
   border: 2px solid #e2e8f0;
   border-radius: 10px;
-  font-size: 15px;
+  font-size: 14px;
   outline: none;
   transition: border-color 0.2s;
 }
 
 #habit-input:focus {
+  border-color: #4f46e5;
+}
+
+#habit-category {
+  width: 100%;
+  padding: 12px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  background-color: #ffffff;
+  color: #2d3748;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+#habit-category:focus {
+  border-color: #4f46e5;
+}
+
+/* Custom Category Input (shown when "Add Category" is selected) */
+#custom-category-input {
+  margin-top: 4px;
+  padding: 10px 12px;
+  border: 2px solid #4f46e5;
+  border-radius: 10px;
+  font-size: 13px;
+  outline: none;
+  background: #f5f3ff;
+}
+
+#habit-days {
+  width: 100%;
+  padding: 12px 10px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  background-color: #ffffff;
+  color: #2d3748;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+#habit-days:focus {
+  border-color: #4f46e5;
+}
+
+#start-date-option, #custom-date-input {
+  width: 100%;
+  padding: 12px 10px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  background-color: #ffffff;
+  color: #2d3748;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+#custom-date-input {
+  margin-top: 4px;
+}
+
+#start-date-option:focus, #custom-date-input:focus {
   border-color: #4f46e5;
 }
 
@@ -67,6 +176,7 @@ header h1 {
   border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
   transition: background 0.2s, transform 0.1s;
 }
 
@@ -159,44 +269,14 @@ header h1 {
   color: #e53e3e;
 }
 
-/* Checkpoints (Days of the week) */
-.checkpoints {
-  display: flex;
-  justify-content: space-between;
-  gap: 6px;
-}
-
-.day-checkpoint {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
+/* Category Tag Badge */
+.category-tag {
   font-size: 11px;
+  background: #e0e7ff;
+  color: #4338ca;
+  padding: 3px 8px;
+  border-radius: 12px;
   font-weight: 600;
-  color: #718096;
-}
-
-.day-checkpoint input[type="checkbox"] {
-  appearance: none;
-  width: 24px;
-  height: 24px;
-  border: 2px solid #cbd5e0;
-  border-radius: 6px;
-  cursor: pointer;
-  display: grid;
-  place-content: center;
-  transition: background 0.2s, border-color 0.2s;
-}
-
-.day-checkpoint input[type="checkbox"]:checked {
-  background: #10b981;
-  border-color: #10b981;
-}
-
-.day-checkpoint input[type="checkbox"]:checked::before {
-  content: "✔";
-  color: white;
-  font-size: 12px;
 }
 
 /* Streak badge */
@@ -211,29 +291,101 @@ header h1 {
   align-items: center;
   gap: 4px;
 }
-/* Style for the Category Dropdown */
-#habit-category {
-  padding: 12px 14px;
-  border: 2px solid #e2e8f0;
+
+/* Checkpoints Container Base */
+.checkpoints {
+  padding: 10px 2px;
+}
+
+/* MODE 1: Up to 7 days → single horizontal scroll row */
+.checkpoints.checkpoints-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+/* MODE 2: 8–28 days → clean 7-per-row table, NO scrollbar (all visible) */
+.checkpoints.checkpoints-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  overflow: visible;
+}
+
+/* MODE 3: More than 28 days → 7-per-row table WITH vertical scroll */
+.checkpoints.checkpoints-grid-scroll {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Individual Day Card */
+.day-checkpoint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
-  font-size: 14px;
-  background-color: #ffffff;
-  color: #2d3748;
-  outline: none;
+  text-align: center;
+  transition: all 0.2s;
+  min-width: 0;
+}
+
+.day-checkpoint input[type="checkbox"] {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #cbd5e0;
+  border-radius: 6px;
   cursor: pointer;
-  transition: border-color 0.2s;
+  display: grid;
+  place-content: center;
+  margin-top: 4px;
+  transition: background 0.2s, border-color 0.2s;
 }
 
-#habit-category:focus {
-  border-color: #4f46e5;
+.day-checkpoint input[type="checkbox"]:checked {
+  background: #10b981;
+  border-color: #10b981;
 }
 
-/* Category Tag Badge on each Habit Card */
-.category-tag {
-  font-size: 11px;
-  background: #e0e7ff;
-  color: #4338ca;
-  padding: 3px 8px;
-  border-radius: 12px;
+.day-checkpoint input[type="checkbox"]:checked::before {
+  content: "✔";
+  color: white;
+  font-size: 12px;
+}
+
+.checkpoint-day-num {
+  font-size: 10px;
+  color: #a0aec0;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.checkpoint-weekday {
+  font-size: 12px;
   font-weight: 600;
+  color: #4a5568;
+}
+
+.checkpoint-date {
+  font-size: 11px;
+  color: #718096;
+}
+
+/* Highlight Today */
+.day-checkpoint.is-today {
+  border: 2px solid #4f46e5;
+  background: #eef2ff;
+}
+
+.day-checkpoint.is-today .checkpoint-day-num {
+  color: #4f46e5;
 }

@@ -1,73 +1,157 @@
-// 1. Select HTML elements we need to work with
+// 1. Select HTML elements
 const habitInput = document.getElementById("habit-input");
 const habitCategory = document.getElementById("habit-category");
+const customCategoryInput = document.getElementById("custom-category-input");
+const habitDays = document.getElementById("habit-days");
+const startDateOption = document.getElementById("start-date-option");
+const customDateInput = document.getElementById("custom-date-input");
 const addBtn = document.getElementById("add-btn");
 const habitList = document.getElementById("habit-list");
 const progressText = document.getElementById("progress-text");
 const progressBarFill = document.getElementById("progress-bar-fill");
 const todayDateElement = document.getElementById("today-date");
 
-// Days of the week for our checkpoints
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-// 2. Load saved habits from LocalStorage (or start with an empty list if none exist)
+// 2. Load saved habits from LocalStorage
 let habits = JSON.parse(localStorage.getItem("myHabits")) || [];
 
-// 3. Display today's date at the top
+// 3. Set default date on the date picker to today
+const today = new Date();
+const yyyy = today.getFullYear();
+const mm = String(today.getMonth() + 1).padStart(2, '0');
+const dd = String(today.getDate()).padStart(2, '0');
+customDateInput.value = `${yyyy}-${mm}-${dd}`;
+
+// 4. Toggle date picker visibility based on user selection
+startDateOption.addEventListener("change", () => {
+  if (startDateOption.value === "custom") {
+    customDateInput.style.display = "block";
+  } else {
+    customDateInput.style.display = "none";
+  }
+});
+
+// 5. Handle Custom Category: Show input when "➕ Add Category" is selected
+habitCategory.addEventListener("change", () => {
+  if (habitCategory.value === "__NEW__") {
+    customCategoryInput.style.display = "block";
+    customCategoryInput.focus();
+  } else {
+    customCategoryInput.style.display = "none";
+  }
+});
+
+// 6. Display today's date at the top
 function displayCurrentDate() {
   const options = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
-  const today = new Date();
-  todayDateElement.textContent = today.toLocaleDateString('en-US', options);
+  todayDateElement.textContent = new Date().toLocaleDateString('en-US', options);
 }
 
-// 4. Save habits list to browser's LocalStorage
+// 7. Save habits list to browser's LocalStorage
 function saveHabits() {
   localStorage.setItem("myHabits", JSON.stringify(habits));
 }
 
-// 5. Add a new habit
+// Helper: Check if two dates represent the exact same calendar day
+function isSameDay(date1, date2) {
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  );
+}
+
+// 8. Add a new habit
 function addHabit() {
   const habitText = habitInput.value.trim();
+  const selectedDays = parseInt(habitDays.value, 10);
 
-  // Don't add if the input is empty
   if (habitText === "") {
     alert("Please enter a habit name!");
+    habitInput.focus();
     return;
   }
 
-  // Create a new habit object with category and 7 checkpoints (all initially false)
+  if (isNaN(selectedDays) || selectedDays < 1) {
+    alert("Please enter a valid number of days (at least 1)!");
+    habitDays.focus();
+    return;
+  }
+
+  // Handle Category (Check if user entered a custom category)
+  let chosenCategory = habitCategory.value;
+  if (chosenCategory === "__NEW__") {
+    const customText = customCategoryInput.value.trim();
+    if (customText === "") {
+      alert("Please enter your custom category name!");
+      customCategoryInput.focus();
+      return;
+    }
+    chosenCategory = customText;
+
+    // Add new custom category into dropdown so it can be re-used!
+    const newOption = document.createElement("option");
+    newOption.value = customText;
+    newOption.textContent = customText;
+    habitCategory.insertBefore(newOption, habitCategory.lastElementChild);
+    habitCategory.value = customText;
+    customCategoryInput.value = "";
+    customCategoryInput.style.display = "none";
+  }
+
+  // Determine starting date: Today or Custom Date
+  let startDate = new Date();
+  if (startDateOption.value === "custom" && customDateInput.value) {
+    const parts = customDateInput.value.split("-");
+    startDate = new Date(parts[0], parts[1] - 1, parts[2]);
+  }
+
+  // Generate checkpoints starting from the selected start date
+  const checkpoints = [];
+  for (let i = 0; i < selectedDays; i++) {
+    const checkpointDate = new Date(startDate);
+    checkpointDate.setDate(startDate.getDate() + i);
+
+    checkpoints.push({
+      dayNumber: i + 1,
+      dayName: checkpointDate.toLocaleDateString('en-US', { weekday: 'short' }),
+      dateStr: checkpointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      fullDate: checkpointDate.toISOString(),
+      completed: false
+    });
+  }
+
   const newHabit = {
-    id: Date.now(), // unique ID based on timestamp
+    id: Date.now(),
     name: habitText,
-    category: habitCategory.value, // Selected category tag
-    checkpoints: [false, false, false, false, false, false, false]
+    category: chosenCategory,
+    totalDays: selectedDays,
+    checkpoints: checkpoints
   };
 
-  // Add to our list, clear input box, save and re-draw the UI
   habits.push(newHabit);
   habitInput.value = "";
   saveHabits();
   renderHabits();
 }
 
-// 6. Delete a habit
+// 9. Delete a habit
 function deleteHabit(habitId) {
   habits = habits.filter(habit => habit.id !== habitId);
   saveHabits();
   renderHabits();
 }
 
-// 7. Toggle a checkpoint checkbox
+// 10. Toggle a checkpoint checkbox
 function toggleCheckpoint(habitId, dayIndex) {
   const habit = habits.find(h => h.id === habitId);
-  if (habit) {
-    habit.checkpoints[dayIndex] = !habit.checkpoints[dayIndex];
+  if (habit && habit.checkpoints && habit.checkpoints[dayIndex]) {
+    habit.checkpoints[dayIndex].completed = !habit.checkpoints[dayIndex].completed;
     saveHabits();
     renderHabits();
   }
 }
 
-// 8. Update the Progress Bar and completion count
+// 11. Update the Progress Bar
 function updateProgress() {
   if (habits.length === 0) {
     progressText.textContent = "0 / 0 completed";
@@ -75,63 +159,90 @@ function updateProgress() {
     return;
   }
 
-  // Find what day today is (0 = Sun, 1 = Mon, ..., 6 = Sat)
-  // We align it to our Mon-Sun array (Mon=0, Tue=1, ..., Sun=6)
-  const todayIndex = (new Date().getDay() + 6) % 7;
+  const currentToday = new Date();
+  let totalHabitsToday = 0;
+  let completedHabitsToday = 0;
 
-  // Count how many habits have today's checkpoint checked
-  const completedToday = habits.filter(habit => habit.checkpoints[todayIndex]).length;
-  const total = habits.length;
+  habits.forEach(habit => {
+    const todayCheckpoint = habit.checkpoints.find(cp => {
+      const cpDate = new Date(cp.fullDate);
+      return isSameDay(cpDate, currentToday);
+    });
 
-  progressText.textContent = `${completedToday} / ${total} completed today`;
+    if (todayCheckpoint) {
+      totalHabitsToday++;
+      if (todayCheckpoint.completed) {
+        completedHabitsToday++;
+      }
+    }
+  });
 
-  // Calculate percentage
-  const percentage = Math.round((completedToday / total) * 100);
+  if (totalHabitsToday === 0) {
+    progressText.textContent = "No habits scheduled for today";
+    progressBarFill.style.width = "0%";
+    return;
+  }
+
+  progressText.textContent = `${completedHabitsToday} / ${totalHabitsToday} completed today`;
+  const percentage = Math.round((completedHabitsToday / totalHabitsToday) * 100);
   progressBarFill.style.width = `${percentage}%`;
 }
 
-// 9. Render habits to the screen
+// 12. Render habits to the screen
 function renderHabits() {
   habitList.innerHTML = "";
 
-  // If no habits exist, show a friendly empty message
   if (habits.length === 0) {
-    habitList.innerHTML = `<p style="text-align:center; color:#a0aec0; padding: 20px 0;">No habits yet. Add your first habit above to get started!</p>`;
+    habitList.innerHTML = `<p style="text-align:center; color:#a0aec0; padding: 20px 0;">No habits yet. Add your first goal above!</p>`;
     updateProgress();
     return;
   }
 
-  // Draw each habit card
+  const currentToday = new Date();
+
   habits.forEach(habit => {
-    // Count how many checkpoints are completed for this habit
-    const completedDaysCount = habit.checkpoints.filter(Boolean).length;
+    const completedDaysCount = habit.checkpoints.filter(cp => cp.completed).length;
+    const totalDays = habit.totalDays || habit.checkpoints.length;
 
     const card = document.createElement("div");
     card.className = "habit-card";
 
-    // Build the 7 day checkpoints HTML
     let checkpointsHTML = "";
-    DAYS.forEach((day, index) => {
-      const isChecked = habit.checkpoints[index] ? "checked" : "";
+    habit.checkpoints.forEach((cp, index) => {
+      const isChecked = cp.completed ? "checked" : "";
+      const cpDate = new Date(cp.fullDate);
+      const isToday = isSameDay(cpDate, currentToday) ? "is-today" : "";
+
       checkpointsHTML += `
-        <div class="day-checkpoint">
-          <span>${day}</span>
+        <div class="day-checkpoint ${isToday}">
+          <span class="checkpoint-day-num">Day ${cp.dayNumber}</span>
+          <span class="checkpoint-weekday">${cp.dayName}</span>
+          <span class="checkpoint-date">${cp.dateStr}</span>
           <input type="checkbox" ${isChecked} onchange="toggleCheckpoint(${habit.id}, ${index})" />
         </div>
       `;
     });
 
-    // Card structure
+    // MODE 1: 1–7 days   → horizontal scroll row
+    // MODE 2: 8–28 days  → 7-per-row table, NO scroll (everything visible)
+    // MODE 3: 29+ days   → 7-per-row table WITH vertical scroll
+    let checkpointsClass = "checkpoints checkpoints-scroll";
+    if (habit.checkpoints.length > 28) {
+      checkpointsClass = "checkpoints checkpoints-grid-scroll";
+    } else if (habit.checkpoints.length > 7) {
+      checkpointsClass = "checkpoints checkpoints-grid";
+    }
+
     card.innerHTML = `
       <div class="habit-header">
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span class="habit-title">${habit.name}</span>
           <span class="category-tag">${habit.category || '💧 Health'}</span>
-          <span class="streak-badge">🔥 ${completedDaysCount}/7 days</span>
+          <span class="streak-badge">🎯 ${completedDaysCount}/${totalDays} days</span>
         </div>
         <button class="delete-btn" onclick="deleteHabit(${habit.id})" title="Delete habit">✖</button>
       </div>
-      <div class="checkpoints">
+      <div class="${checkpointsClass}">
         ${checkpointsHTML}
       </div>
     `;
@@ -142,10 +253,8 @@ function renderHabits() {
   updateProgress();
 }
 
-// 10. Event Listeners
+// 13. Event Listeners
 addBtn.addEventListener("click", addHabit);
-
-// Allow pressing 'Enter' key inside the input box to add habit
 habitInput.addEventListener("keypress", (event) => {
   if (event.key === "Enter") {
     addHabit();
